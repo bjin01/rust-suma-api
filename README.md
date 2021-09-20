@@ -1,4 +1,4 @@
-# rust-suma-api
+# rest api for suma in rust
 This program offers an rest API for Uyuni and or SUSE Manager.
 You could make HTTP GET requests to 
 * get basic information about a given system hostname.
