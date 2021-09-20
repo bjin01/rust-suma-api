@@ -8,6 +8,11 @@ You could make HTTP GET requests to
 * allows client/minion side patch job scheduling; 
 * convenient to use salt state cmd.run or ansible playbook to trigger the schedule job but without loosing job history on SUSE Manager;
 
+## Downad and Install
+download the binary to your local host.
+```
+cd /usr/local/bin
+wget 
 ## Samples:
 Below GET request would query the system details from SUSE Manager and get some parameters displayed in HTML Code.
 ```
