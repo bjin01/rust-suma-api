@@ -11,10 +11,9 @@ You could make HTTP GET requests to
 ## Downad and Install
 download the binary to your local host.
 ```
-cd /usr/local/bin
-wget https://github.com/bjin01/rust-suma-api/raw/master/uysurest
-chmod +x uysurest
-cd
+wget https://github.com/bjin01/rust-suma-api/files/7195879/uysurest.tar.gz
+sudo tar -xvzf uysurest.tar.gz -C /usr/local/bin/
+chmod +x /usr/local/bin/uysurest
 ```
 Create the config file in yaml format and provide login credentials to SUSE Manager, provide the tls certificate and private key file names and the port number for the rest api program to use.
 ```
