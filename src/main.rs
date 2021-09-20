@@ -1,6 +1,7 @@
 extern crate xmlrpc;
 
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
+use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use xmlrpc::{Request, Value};
 use serde::{Serialize, Deserialize};
 use std::io::prelude::*;
@@ -97,6 +98,38 @@ fn get_system_details(key: &String, s: i32, z: &SumaInfo) -> Result<xmlrpc::Valu
     }
 }
 
+fn get_errata_list(key: &String, s: i32, z: &SumaInfo) -> Result<Vec<i32>, &'static str> {
+    let mut patchlist: Vec<i32> = vec![];
+    let get_errata_list = Request::new("system.getRelevantErrata").arg(String::from(key)).arg(s);
+    let errata_result = get_errata_list.call_url(String::from(&z.hostname));
+    match errata_result {
+        Ok(i) => {
+            if i.as_array().unwrap().len() > 0 {
+                i.as_array().unwrap().into_iter().for_each(|x| {
+                    let id = x.as_struct().unwrap().get("id").unwrap().as_i32().unwrap();
+                    patchlist.push(id);
+                });
+            }
+            Ok(patchlist)
+        },
+        Err(_) => Err("No patch found."),
+    }
+}
+
+fn patch_schedule(key: &String, s: i32, erratalist: Vec<i32>, z: &SumaInfo) -> Result<i32, xmlrpc::Error> {
+    let mut value_id_list: Vec<Value> = Vec::new();
+    for s in &erratalist {
+        value_id_list.push(Value::Int(*s));
+    }
+    let patch_job = Request::new("system.scheduleApplyErrata").arg(String::from(key)).arg(s).arg(Value::Array(value_id_list));
+    let patch_job_id = patch_job.call_url(String::from(&z.hostname));
+    //println!("jobid {:?}", &patch_job_id.as_ref().unwrap());
+    match patch_job_id {
+        Ok(s) => Ok(s.as_array().unwrap()[0].as_i32().unwrap()),
+        Err(e) => Err(e),
+    }
+}
+
 fn get_system_details_html(x: Value) -> String {
     //println!("{}", x.as_struct().unwrap().get("minion_id").unwrap().as_str().unwrap());
     let system_details_fields = vec!["minion_id", "machine_id", "base_entitlement", "virtualization", "contact_method"];
@@ -117,7 +150,7 @@ fn get_system_details_html(x: Value) -> String {
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("Hello BoJin!")
+    HttpResponse::Ok().body("Hello!")
 }
 
 #[get("/getid")]
@@ -143,21 +176,57 @@ async fn getid(web::Query(info): web::Query<GetServerId>) -> impl Responder {
     return HttpResponse::Ok().body(&String::from(system_details_html_body))
 }
 
-async fn manual_hello() -> impl Responder {
-    HttpResponse::Ok().body("Hey Bo!")
+#[get("/patch")]
+async fn patch(web::Query(info): web::Query<GetServerId>) -> impl Responder {
+
+    let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
+    suma_info.hostname.insert_str(0, "https://");
+    suma_info.hostname.push_str("/rpc/api");
+    println!("suma host api url: {}", &suma_info.hostname);
+
+    let key = login(&suma_info);
+            
+    let systems_id = get_systemid(&key, &info.hostname, &suma_info);
+    //println!("systemdi: {:?}", systems_id.unwrap());
+    let sid = match systems_id {
+        Ok(i) => i,
+        Err(s) => return HttpResponse::Ok().body(&String::from(s)),
+    };
+    let get_errata_list_result = get_errata_list(&key, sid, &suma_info);
+    let errata_list = match get_errata_list_result {
+        Ok(i) => i,
+        Err(s) => return HttpResponse::Ok().body(&String::from(s)),
+    };
+    
+    let patch_job_result = patch_schedule(&key, sid, errata_list, &suma_info);
+    println!("Logout successful - {}", logout(&key, &suma_info));
+    match patch_job_result {
+        Ok(i) => return HttpResponse::Ok().body(&String::from("Jobid: ".to_owned() + &i.to_string())),
+        Err(s) => return HttpResponse::Ok().body(&String::from(s.to_string())),
+    };
+    
+    
+}
+
+async fn suma() -> impl Responder {
+    HttpResponse::Ok().body("Hey, this is suse manager!")
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    
+    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    builder
+        .set_private_key_file("mykey.pem", SslFiletype::PEM)
+        .unwrap();
+    builder.set_certificate_chain_file("mycert.pem").unwrap();
 
     HttpServer::new(|| {
         App::new()
-            .service(hello)
             .service(getid)
-            .route("/hey", web::get().to(manual_hello))
+            .service(patch)
+            .route("/suma", web::get().to(suma))
     })
-    .bind("127.0.0.1:8888")?
+    .bind_openssl("0.0.0.0:8888", builder)?
     .run()
     .await
 }
