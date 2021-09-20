@@ -180,7 +180,7 @@ async fn getid(web::Query(info): web::Query<GetServerId>) -> impl Responder {
 async fn patch(web::Query(info): web::Query<GetServerId>) -> impl Responder {
 
     let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
-    suma_info.hostname.insert_str(0, "https://");
+    suma_info.hostname.insert_str(0, "http://");
     suma_info.hostname.push_str("/rpc/api");
     println!("suma host api url: {}", &suma_info.hostname);
 
