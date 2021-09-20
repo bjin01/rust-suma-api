@@ -2,5 +2,5 @@
 hostname: bjsuma.bo2go.home
 user_name: bjin
 password: suse1234
-certificate: mycert.pem
-tls_key: mykey.pem
+certificate: /home/bjin/tmp/mycert.pem
+tls_key: /home/bjin//tmp/mykey.pem
