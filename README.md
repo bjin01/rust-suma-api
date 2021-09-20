@@ -12,7 +12,15 @@ You could make HTTP GET requests to
 download the binary to your local host.
 ```
 cd /usr/local/bin
-wget 
+wget https://github.com/bjin01/rust-suma-api/raw/master/uysurest
+chmod +x uysurest
+cd
+```
+Start the program:
+```
+uysurest --config /home/bjin/config.yaml
+```
+
 ## Samples:
 Below GET request would query the system details from SUSE Manager and get some parameters displayed in HTML Code.
 ```

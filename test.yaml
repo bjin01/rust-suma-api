@@ -4,3 +4,4 @@ user_name: bjin
 password: suse1234
 certificate: /home/bjin/tmp/mycert.pem
 tls_key: /home/bjin//tmp/mykey.pem
+restapi_port: 8888

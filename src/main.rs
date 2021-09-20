@@ -15,6 +15,7 @@ struct SumaInfo {
     password: String,
     certificate: String,
     tls_key: String,
+    restapi_port: i32,
 }
 
 #[derive(Deserialize)]
@@ -169,6 +170,7 @@ async fn getid(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaIn
         password: data.password.clone(),
         certificate: data.certificate.clone(),
         tls_key: data.tls_key.clone(),
+        restapi_port: data.restapi_port,
     };
     let key = login(&suma);
             
@@ -194,6 +196,7 @@ async fn patch(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaIn
         password: data.password.clone(),
         certificate: data.certificate.clone(),
         tls_key: data.tls_key.clone(),
+        restapi_port: data.restapi_port,
     };
 
     /* let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
@@ -252,6 +255,8 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
     builder.set_certificate_chain_file(&suma_info.certificate).unwrap();
 
+    let server_port = suma_info.restapi_port;
+
     HttpServer::new(move || {
         OtherApp::new()
             .data(suma_info.clone())
@@ -259,7 +264,7 @@ async fn main() -> std::io::Result<()> {
             .route("/patch", web::get().to(patch))
             .route("/suma", web::get().to(|| suma("ok".to_string())))
     })
-    .bind_openssl("0.0.0.0:8888", builder)?
+    .bind_openssl("0.0.0.0:".to_owned() + &server_port.to_string(), builder)?
     .run()
     .await
 }
