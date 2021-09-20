@@ -1,17 +1,20 @@
 extern crate xmlrpc;
-
+extern crate clap;
+use clap::{Arg, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use actix_web::{get, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App as OtherApp, HttpResponse, HttpServer, Responder};
 use xmlrpc::{Request, Value};
 use serde::{Serialize, Deserialize};
 use std::io::prelude::*;
 use std::fs::File;
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct SumaInfo {
     hostname: String,
     user_name: String,
     password: String,
+    certificate: String,
+    tls_key: String,
 }
 
 #[derive(Deserialize)]
@@ -154,52 +157,66 @@ async fn hello() -> impl Responder {
 }
 
 #[get("/getid")]
-async fn getid(web::Query(info): web::Query<GetServerId>) -> impl Responder {
+async fn getid(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaInfo>) -> impl Responder {
 
-    let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
+    /* let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
     suma_info.hostname.insert_str(0, "http://");
     suma_info.hostname.push_str("/rpc/api");
-    println!("suma host api url: {:?}", &suma_info.hostname);
-
-    let key = login(&suma_info);
+    println!("suma host api url: {:?}", &suma_info.hostname); */
+    let suma = SumaInfo {
+        hostname: data.hostname.clone(),
+        user_name: data.user_name.clone(),
+        password: data.password.clone(),
+        certificate: data.certificate.clone(),
+        tls_key: data.tls_key.clone(),
+    };
+    let key = login(&suma);
             
-    let systems_id = get_systemid(&key, &info.hostname, &suma_info);
+    let systems_id = get_systemid(&key, &info.hostname, &suma);
     //println!("systemdi: {:?}", systems_id.unwrap());
     let sid = match systems_id {
         Ok(i) => i,
         Err(s) => return HttpResponse::Ok().body(&String::from(s)),
     };
-    let system_details = get_system_details(&key, sid, &suma_info);
-    println!("Logout successful - {}", logout(&key, &suma_info));
+    let system_details = get_system_details(&key, sid, &suma);
+    println!("Logout successful - {}", logout(&key, &data));
     let system_details_html_body = get_system_details_html(system_details.unwrap());
     
     return HttpResponse::Ok().body(&String::from(system_details_html_body))
 }
 
-#[get("/patch")]
-async fn patch(web::Query(info): web::Query<GetServerId>) -> impl Responder {
+//#[get("/patch")]
+async fn patch(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaInfo>) -> impl Responder {
+    
+    let suma = SumaInfo {
+        hostname: data.hostname.clone(),
+        user_name: data.user_name.clone(),
+        password: data.password.clone(),
+        certificate: data.certificate.clone(),
+        tls_key: data.tls_key.clone(),
+    };
 
-    let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
+    /* let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
     suma_info.hostname.insert_str(0, "http://");
     suma_info.hostname.push_str("/rpc/api");
-    println!("suma host api url: {}", &suma_info.hostname);
+    println!("suma host api url: {}", &suma_info.hostname); */
 
-    let key = login(&suma_info);
+    let key = login(&suma);
             
-    let systems_id = get_systemid(&key, &info.hostname, &suma_info);
+    let systems_id = get_systemid(&key, &info.hostname, &suma);
     //println!("systemdi: {:?}", systems_id.unwrap());
     let sid = match systems_id {
         Ok(i) => i,
         Err(s) => return HttpResponse::Ok().body(&String::from(s)),
     };
-    let get_errata_list_result = get_errata_list(&key, sid, &suma_info);
+    let get_errata_list_result = get_errata_list(&key, sid, &suma);
     let errata_list = match get_errata_list_result {
         Ok(i) => i,
         Err(s) => return HttpResponse::Ok().body(&String::from(s)),
     };
     
-    let patch_job_result = patch_schedule(&key, sid, errata_list, &suma_info);
-    println!("Logout successful - {}", logout(&key, &suma_info));
+    let patch_job_result = patch_schedule(&key, sid, errata_list, &suma);
+    println!("Logout successful - {}", logout(&key, &suma));
     match patch_job_result {
         Ok(i) => return HttpResponse::Ok().body(&String::from("Jobid: ".to_owned() + &i.to_string())),
         Err(s) => return HttpResponse::Ok().body(&String::from(s.to_string())),
@@ -208,23 +225,39 @@ async fn patch(web::Query(info): web::Query<GetServerId>) -> impl Responder {
     
 }
 
-async fn suma() -> impl Responder {
-    HttpResponse::Ok().body("Hey, this is suse manager!")
+async fn suma(s: String) -> impl Responder {
+    HttpResponse::Ok().body(s)
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let matches = App::new("SUSE Manager - rest api")
+        .version("0.1.0")
+        .author("Bo Jin <bo.jin@suse.com>")
+        .about("patch systems by calling rest api")
+        .arg(Arg::with_name("config")
+                 .short("c")
+                 .long("config")
+                 .takes_value(true)
+                 .help("yaml config file with login credentials"))
+        .get_matches();
+    let yaml_file = matches.value_of("config").unwrap_or("test.yaml");
+    let mut suma_info: SumaInfo = SumaInfo::new(&String::from(yaml_file));
+    suma_info.hostname.insert_str(0, "http://");
+    suma_info.hostname.push_str("/rpc/api");
+
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder
-        .set_private_key_file("mykey.pem", SslFiletype::PEM)
+        .set_private_key_file(&suma_info.tls_key, SslFiletype::PEM)
         .unwrap();
-    builder.set_certificate_chain_file("mycert.pem").unwrap();
+    builder.set_certificate_chain_file(&suma_info.certificate).unwrap();
 
-    HttpServer::new(|| {
-        App::new()
+    HttpServer::new(move || {
+        OtherApp::new()
+            .data(suma_info.clone())
             .service(getid)
-            .service(patch)
-            .route("/suma", web::get().to(suma))
+            .route("/patch", web::get().to(patch))
+            .route("/suma", web::get().to(|| suma("ok".to_string())))
     })
     .bind_openssl("0.0.0.0:8888", builder)?
     .run()
