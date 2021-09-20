@@ -16,6 +16,16 @@ wget https://github.com/bjin01/rust-suma-api/raw/master/uysurest
 chmod +x uysurest
 cd
 ```
+Create the config file in yaml format and provide login credentials to SUSE Manager, provide the tls certificate and private key file names and the port number for the rest api program to use.
+```
+---
+hostname: bjsuma.bo2go.home
+user_name: bjin
+password: suse1234
+certificate: /home/bjin/tmp/mycert.pem
+tls_key: /home/bjin//tmp/mykey.pem
+restapi_port: 8888
+```
 Start the program:
 ```
 uysurest --config /home/bjin/config.yaml
