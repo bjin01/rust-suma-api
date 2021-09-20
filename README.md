@@ -11,7 +11,7 @@ You could make HTTP GET requests to
 ## Samples:
 Below GET request would query the system details from SUSE Manager and get some parameters displayed in HTML Code.
 ```
-curl -v https://your-suma-hostname/getid?hostname=caasp01.bo2go.home
+curl -v https://your-suma-hostname:8888/getid?hostname=caasp01.bo2go.home
 ```
 
 __Sample output:__
@@ -23,7 +23,7 @@ __Sample output:__
 Below GET request would schedule a patch job to the host. All relevant patches will be applied.
 
 ```
-curl -v -k https://127.0.0.1:8888/patch?hostname=caasp01.bo2go.home
+curl -v -k https://your-suma-hostname:8888/patch?hostname=caasp01.bo2go.home
 ```
 
 __Sample output:__
