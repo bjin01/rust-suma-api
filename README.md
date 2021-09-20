@@ -21,10 +21,11 @@ Start the program:
 uysurest --config /home/bjin/config.yaml
 ```
 
-## Samples:
+## Sample HTTP GET requests:
+### getinfo
 Below GET request would query the system details from SUSE Manager and get some parameters displayed in HTML Code.
 ```
-curl -v https://your-suma-hostname:8888/getid?hostname=caasp01.bo2go.home
+curl -v https://your-suma-hostname:8888/getinfo?hostname=caasp01.bo2go.home
 ```
 
 __Sample output:__
@@ -32,7 +33,7 @@ __Sample output:__
 ```
 <p>minion_id: caasp01.bo2go.home</p><p>machine_id: 235294fd17e14b699bc18fb0e989c3bb</p><p>base_entitlement: salt_entitled</p><p>virtualization: KVM/QEMU</p><p>contact_method: default</p>
 ```
-
+### patch
 Below GET request would schedule a patch job to the host. All relevant patches will be applied.
 
 ```

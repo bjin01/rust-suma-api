@@ -135,7 +135,7 @@ fn patch_schedule(key: &String, s: i32, erratalist: Vec<i32>, z: &SumaInfo) -> R
 }
 
 fn get_system_details_html(x: Value) -> String {
-    //println!("{}", x.as_struct().unwrap().get("minion_id").unwrap().as_str().unwrap());
+
     let system_details_fields = vec!["minion_id", "machine_id", "base_entitlement", "virtualization", "contact_method"];
 
     let mut body = String::new();
@@ -157,13 +157,9 @@ async fn hello() -> impl Responder {
     HttpResponse::Ok().body("Hello!")
 }
 
-#[get("/getid")]
-async fn getid(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaInfo>) -> impl Responder {
+#[get("/getinfo")]
+async fn getinfo(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaInfo>) -> impl Responder {
 
-    /* let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
-    suma_info.hostname.insert_str(0, "http://");
-    suma_info.hostname.push_str("/rpc/api");
-    println!("suma host api url: {:?}", &suma_info.hostname); */
     let suma = SumaInfo {
         hostname: data.hostname.clone(),
         user_name: data.user_name.clone(),
@@ -198,11 +194,6 @@ async fn patch(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaIn
         tls_key: data.tls_key.clone(),
         restapi_port: data.restapi_port,
     };
-
-    /* let mut suma_info: SumaInfo = SumaInfo::new(&String::from("test.yaml"));
-    suma_info.hostname.insert_str(0, "http://");
-    suma_info.hostname.push_str("/rpc/api");
-    println!("suma host api url: {}", &suma_info.hostname); */
 
     let key = login(&suma);
             
@@ -260,7 +251,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         OtherApp::new()
             .data(suma_info.clone())
-            .service(getid)
+            .service(getinfo)
             .route("/patch", web::get().to(patch))
             .route("/suma", web::get().to(|| suma("ok".to_string())))
     })
