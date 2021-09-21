@@ -15,14 +15,30 @@ wget https://github.com/bjin01/rust-suma-api/files/7195879/uysurest.tar.gz
 sudo tar -xvzf uysurest.tar.gz -C /usr/local/bin/
 chmod +x /usr/local/bin/uysurest
 ```
+Create TLS Certificate for your rest api host: 
+ 
+If this program is running on SUSE Manager host itself you could re-use the existing server certficate file and key file located on 
+```
+/etc/apache2/ssl.crt/server.crt
+/etc/apache2/ssl.key/server.key
+```
+You will need the tls certificate for the host where this program will run and also the key file. The path to this files will be needed in the next step.
+Of course you could use official signed server certificate and your key file.
+For example:
+
+```
+cd /tmp
+openssl req -x509 -newkey rsa:4096 -nodes -keyout mykey.pem -out mycert.pem -days 365 -subj '/CN=localhost'
+```
+
 Create the config file in yaml format and provide login credentials to SUSE Manager, provide the tls certificate and private key file names and the port number for the rest api program to use.
 ```
 ---
 hostname: bjsuma.bo2go.home
 user_name: bjin
 password: suse1234
-certificate: /home/bjin/tmp/mycert.pem
-tls_key: /home/bjin//tmp/mykey.pem
+certificate: /tmp/mycert.pem
+tls_key: /tmp/mykey.pem
 restapi_port: 8888
 ```
 Start the program:
