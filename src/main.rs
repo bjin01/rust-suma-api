@@ -1,8 +1,13 @@
 extern crate xmlrpc;
 extern crate clap;
+
 use clap::{Arg, App};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use actix_web::{get, web, App as OtherApp, HttpResponse, HttpServer, Responder};
+use actix_web_httpauth::extractors::AuthenticationError;
+use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
+use actix_web::{dev::ServiceRequest, get, web, App as OtherApp, HttpResponse, HttpServer, Responder, middleware, Error};
+use actix_web_httpauth::middleware::HttpAuthentication;
+
 use xmlrpc::{Request, Value};
 use serde::{Serialize, Deserialize};
 use std::io::prelude::*;
@@ -223,6 +228,21 @@ async fn suma(s: String) -> impl Responder {
     HttpResponse::Ok().body(s)
 }
 
+async fn validator(req: ServiceRequest, credentials: BasicAuth) -> Result<ServiceRequest, Error> {
+    
+    let config = req
+        .app_data::<Config>()
+        .map(|data| data.clone())
+        .unwrap_or_else(Default::default);
+    println!("{:?}", config);
+    if credentials.user_id().eq("suma") && credentials.password().unwrap().eq("restapi") {
+        Ok(req)
+    } else {
+        Err(AuthenticationError::from(config).into())
+    } 
+    
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let matches = App::new("SUSE Manager - rest api")
@@ -247,10 +267,16 @@ async fn main() -> std::io::Result<()> {
     builder.set_certificate_chain_file(&suma_info.certificate).unwrap();
 
     let server_port = suma_info.restapi_port;
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+
 
     HttpServer::new(move || {
+        let auth = HttpAuthentication::basic(validator);
         OtherApp::new()
             .data(suma_info.clone())
+            //.wrap(middleware::Logger::default())
+            .wrap(middleware::Logger::new("%a %{User-Agent}i"))
+            .wrap(auth)
             .service(getinfo)
             .route("/patch", web::get().to(patch))
             .route("/suma", web::get().to(|| suma("ok".to_string())))
