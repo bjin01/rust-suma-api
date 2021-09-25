@@ -7,11 +7,13 @@ use actix_web_httpauth::extractors::AuthenticationError;
 use actix_web_httpauth::extractors::basic::{BasicAuth, Config};
 use actix_web::{dev::ServiceRequest, get, web, App as OtherApp, HttpResponse, HttpServer, Responder, middleware, Error};
 use actix_web_httpauth::middleware::HttpAuthentication;
-
+//use actix_web::middleware::HttpAuthentication;
 use xmlrpc::{Request, Value};
 use serde::{Serialize, Deserialize};
 use std::io::prelude::*;
 use std::fs::File;
+use std::sync::Once;
+
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct SumaInfo {
@@ -21,6 +23,8 @@ struct SumaInfo {
     certificate: String,
     tls_key: String,
     restapi_port: i32,
+    http_basic_auth_user: String,
+    http_basic_auth_password: String,
 }
 
 #[derive(Deserialize)]
@@ -41,6 +45,9 @@ impl SumaInfo {
         return deserialized_map
     }
 }
+
+static mut GLOBAL_SUMA: Option<SumaInfo> = None;
+static INIT: Once = Once::new();
 
 fn login(s: &SumaInfo) -> String {
     let suma_request = Request::new("auth.login").arg(String::from(&s.user_name)).arg(String::from(&s.password)); 
@@ -164,15 +171,7 @@ async fn hello() -> impl Responder {
 
 #[get("/getinfo")]
 async fn getinfo(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaInfo>) -> impl Responder {
-
-    let suma = SumaInfo {
-        hostname: data.hostname.clone(),
-        user_name: data.user_name.clone(),
-        password: data.password.clone(),
-        certificate: data.certificate.clone(),
-        tls_key: data.tls_key.clone(),
-        restapi_port: data.restapi_port,
-    };
+    let suma = data.clone();
     let key = login(&suma);
             
     let systems_id = get_systemid(&key, &info.hostname, &suma);
@@ -190,16 +189,7 @@ async fn getinfo(web::Query(info): web::Query<GetServerId>, data: web::Data<Suma
 
 //#[get("/patch")]
 async fn patch(web::Query(info): web::Query<GetServerId>, data: web::Data<SumaInfo>) -> impl Responder {
-    
-    let suma = SumaInfo {
-        hostname: data.hostname.clone(),
-        user_name: data.user_name.clone(),
-        password: data.password.clone(),
-        certificate: data.certificate.clone(),
-        tls_key: data.tls_key.clone(),
-        restapi_port: data.restapi_port,
-    };
-
+    let suma = data.clone();
     let key = login(&suma);
             
     let systems_id = get_systemid(&key, &info.hostname, &suma);
@@ -229,17 +219,29 @@ async fn suma(s: String) -> impl Responder {
 }
 
 async fn validator(req: ServiceRequest, credentials: BasicAuth) -> Result<ServiceRequest, Error> {
+    unsafe {
+        let user = match &GLOBAL_SUMA {
+            Some(i) => &i.http_basic_auth_user,
+            None => panic!(),
+        };
+
+        let pwd = match &GLOBAL_SUMA {
+            Some(i) => &i.http_basic_auth_password,
+            None => panic!(),
+        };
     
-    let config = req
-        .app_data::<Config>()
-        .map(|data| data.clone())
-        .unwrap_or_else(Default::default);
-    println!("{:?}", config);
-    if credentials.user_id().eq("suma") && credentials.password().unwrap().eq("restapi") {
-        Ok(req)
-    } else {
-        Err(AuthenticationError::from(config).into())
-    } 
+        let config = req
+            .app_data::<Config>()
+            .map(|data| data.clone())
+            .unwrap_or_else(Default::default);
+
+        if credentials.user_id().eq(user) && credentials.password().unwrap().eq(pwd) {
+            Ok(req)
+        } else {
+            println!("Wrong HTTP Basic Auth credentials.");
+            Err(AuthenticationError::from(config).into())
+        } 
+    }
     
 }
 
@@ -268,13 +270,18 @@ async fn main() -> std::io::Result<()> {
 
     let server_port = suma_info.restapi_port;
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
-
+    INIT.call_once(|| {
+        unsafe {
+            GLOBAL_SUMA = Some(suma_info.clone());
+        }
+    });
+    
 
     HttpServer::new(move || {
         let auth = HttpAuthentication::basic(validator);
+
         OtherApp::new()
             .data(suma_info.clone())
-            //.wrap(middleware::Logger::default())
             .wrap(middleware::Logger::new("%a %{User-Agent}i"))
             .wrap(auth)
             .service(getinfo)
