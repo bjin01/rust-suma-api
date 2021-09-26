@@ -1,5 +1,5 @@
-# rest api for suma in rust
-This program offers an rest API for Uyuni and or SUSE Manager.
+# rest api for suma in rust with HTTP Basi Authentication
+This program offers a simple rest API for Uyuni and or SUSE Manager.
 You could make HTTP GET requests to 
 * get basic information about a given system hostname.
 * schedule a patch job on SUSE Manager for the given host.
@@ -9,9 +9,9 @@ You could make HTTP GET requests to
 * convenient to use salt state cmd.run or ansible playbook to trigger the schedule job but without loosing job history on SUSE Manager;
 
 ## Downad and Install
-download the binary to your local host.
+Download the binary to your local host.
 ```
-wget https://github.com/bjin01/rust-suma-api/files/7195879/uysurest.tar.gz
+wget https://github.com/bjin01/rust-suma-api/files/7231314/uysurest.tar.gz
 sudo tar -xvzf uysurest.tar.gz -C /usr/local/bin/
 chmod +x /usr/local/bin/uysurest
 ```
