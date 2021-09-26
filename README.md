@@ -1,4 +1,4 @@
-# rest api for suma in rust with HTTP Basic Authentication
+# SUSE Manager REST API with HTTP Basic Authentication 
 This program offers a simple rest API for Uyuni and or SUSE Manager.
 You could make HTTP GET requests to 
 * get basic information about a given system hostname.
@@ -8,8 +8,8 @@ You could make HTTP GET requests to
 * allows client/minion side patch job scheduling; 
 * convenient to use salt state cmd.run or ansible playbook to trigger the schedule job but without loosing job history on SUSE Manager;
 
-## Downad and Install
-Download the binary to your local host.
+## Download and Install
+Download the binary to your local host (Linux only):
 ```
 wget https://github.com/bjin01/rust-suma-api/files/7231314/uysurest.tar.gz
 sudo tar -xvzf uysurest.tar.gz -C /usr/local/bin/
@@ -17,21 +17,20 @@ chmod +x /usr/local/bin/uysurest
 ```
 Create TLS Certificate for your rest api host: 
  
-If this program is running on SUSE Manager host itself you could re-use the existing server certficate file and key file located on 
+If this program is running on SUSE Manager host itself you could re-use the existing server certficate and key files located on 
 ```
 /etc/apache2/ssl.crt/server.crt
 /etc/apache2/ssl.key/server.key
 ```
-You will need the tls certificate for the host where this program will run and also the key file. The path to this files will be needed in the next step.
+For running the program on other host you need the tls server certificate and key files in pem format. The path to the files will be needed in the next step.
 Of course you could use official signed server certificate and your key file.
 For example:
-
 ```
 cd /tmp
 openssl req -x509 -newkey rsa:4096 -nodes -keyout mykey.pem -out mycert.pem -days 365 -subj '/CN=localhost'
 ```
 
-Create the config file in yaml format and provide login credentials to SUSE Manager, provide the tls certificate and private key file names and the port number for the rest api program to use.
+Create the config file in yaml format and provide login credentials including other key value pairs for the program to use.
 ```
 ---
 hostname: bjsuma.bo2go.home
