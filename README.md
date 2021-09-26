@@ -1,4 +1,4 @@
-# rest api for suma in rust with HTTP Basi Authentication
+# rest api for suma in rust with HTTP Basic Authentication
 This program offers a simple rest API for Uyuni and or SUSE Manager.
 You could make HTTP GET requests to 
 * get basic information about a given system hostname.
