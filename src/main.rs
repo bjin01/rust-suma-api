@@ -193,9 +193,8 @@ async fn getinfo(web::Query(info): web::Query<GetServerId>) -> impl Responder {
 
 //#[get("/patch")]
 async fn patch(web::Query(info): web::Query<GetServerId>) -> impl Responder {
-    
     let key = login(SumaInfo::global());
-            
+
     let systems_id = get_systemid(&key, &info.hostname, SumaInfo::global());
     //println!("systemdi: {:?}", systems_id.unwrap());
     let sid = match systems_id {
@@ -223,6 +222,7 @@ async fn suma(s: String) -> impl Responder {
 async fn validator(req: ServiceRequest, credentials: BasicAuth) -> Result<ServiceRequest, Error> {
     
     let local_suma_info = SumaInfo::global();
+    
     let config = req
         .app_data::<Config>()
         .map(|data| data.clone())
@@ -268,6 +268,7 @@ async fn main() -> std::io::Result<()> {
         let auth = HttpAuthentication::basic(validator);
 
         OtherApp::new()
+            .wrap(middleware::Logger::default())
             .wrap(middleware::Logger::new("%a %{User-Agent}i"))
             .wrap(auth)
             .service(getinfo)
