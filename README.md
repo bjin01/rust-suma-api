@@ -40,6 +40,8 @@ password: suse1234
 certificate: /tmp/mycert.pem
 tls_key: /tmp/mykey.pem
 restapi_port: 8888
+http_basic_auth_user: abc
+http_basic_auth_password: 123
 ```
 Start the program:
 ```
