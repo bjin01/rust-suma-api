@@ -5,5 +5,5 @@ password: suse1234
 certificate: /home/bjin/tmp/mycert.pem
 tls_key: /home/bjin//tmp/mykey.pem
 restapi_port: 8888
-http_basic_auth_user: suma
-http_basic_auth_password: restapi
+http_basic_auth_user: abc
+http_basic_auth_password: 123

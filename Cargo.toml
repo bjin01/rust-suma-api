@@ -16,6 +16,8 @@ actix-web-httpauth = "0.5.0"
 env_logger = "0.9.0"
 lazy_static = "1.4.0"
 once_cell = "1.8.0"
+log = "0.4.0"
+derive_more = "0.99.16"
 
 actix-service = "2.0.0"
 base64 = "0.13"
