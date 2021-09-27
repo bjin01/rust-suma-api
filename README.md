@@ -11,7 +11,7 @@ You could make HTTP GET requests to
 ## Download and Install
 Download the binary to your local host (Linux only):
 ```
-wget https://github.com/bjin01/rust-suma-api/files/7231314/uysurest.tar.gz
+wget https://github.com/bjin01/rust-suma-api/files/7233502/uysurest.tar.gz
 sudo tar -xvzf uysurest.tar.gz -C /usr/local/bin/
 chmod +x /usr/local/bin/uysurest
 ```
